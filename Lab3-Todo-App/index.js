@@ -1,17 +1,28 @@
 //Applicattion Entry point
-const { next } = require('cli');
+
 const express = require('express');
+
 const app = express();
 const path = require('path');
+
 const { usersRouter, todosRouter } = require('./routes');
 
-app.use(express.json)
+require('./models');
+require('dotenv').config();
+
+// Call express.json()
+app.use(express.json());
+
+const connectDB = require('./db');
 
 //Middleware handles static files
 app.use(express.static(path.join(__dirname, './public')));
 
 app.use('/users', usersRouter);
 app.use('/todos', todosRouter);
+
+
+// console.log(process.env);
 
 /*
  * Code Logic
@@ -23,14 +34,24 @@ app.all('*', (req, res, next) => {
     res.status(404).json({
         error: 'Resource not found'
     });
+    next();
 });
 
 app.use((err, req, res, next) => {
     res.status(500).json({
-        error: 'Server error'
+        msg: 'Server error',
+        error: err
     });
 });
 
-app.listen(3000, () => {
-    console.log('App is running on http://localhost:3000');
-});
+connectDB()
+    .then(
+        () => {
+            app.listen(process.env.PORT, () => {
+                console.log(`App is running on ${process.env.PORT}`);
+            });
+        }
+    )
+    .catch(
+        () => process.exit(1)
+    );
